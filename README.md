@@ -18,8 +18,8 @@ A FastAPI-based web service that uses Playwright to fetch and process web conten
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/WaterCrawl.git
-cd WaterCrawl/playwright
+git clone git@github.com:watercrawl/playwright.git
+cd playwright
 ```
 
 2. Set up environment variables:
