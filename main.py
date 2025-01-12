@@ -127,15 +127,22 @@ async def fetch_html(body: CrawlRequest):
 
         response = await page.goto(
             body.url,
-            wait_until="load",
+            wait_until="domcontentloaded",
             timeout=body.timeout,
         )
 
-        # wait for network idle
-        await page.wait_for_load_state("networkidle")
-
         if body.wait_after_load:
             await page.wait_for_timeout(body.wait_after_load)
+
+        scroll_height = await page.evaluate("""() => {
+    const step = 50;
+    let scrollInterval = setInterval(() => {
+        window.scrollBy(0, step);
+    }, 10);
+    return document.body.scrollHeight;
+};""")
+
+        await page.wait_for_timeout(scroll_height / 5)
 
         try:
             if body.accept_cookies_selector:
@@ -174,7 +181,7 @@ async def fetch_html(body: CrawlRequest):
                                     content=base64.b64encode(content).decode("utf-8")
                                 )
                             )
-                        # os.remove(filepath)
+                        os.remove(filepath)
 
                     elif action.type == ActionType.PDF:
                         filename = f"page_{timestamp}.pdf"
@@ -189,7 +196,7 @@ async def fetch_html(body: CrawlRequest):
                                     content=base64.b64encode(content).decode("utf-8")
                                 )
                             )
-                        # os.remove(filepath)
+                        os.remove(filepath)
 
                 except Exception as e:
                     continue

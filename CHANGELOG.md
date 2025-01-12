@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-01-13
+
+### Added
+- Smooth scrolling functionality for better page rendering
+- Dynamic scroll height calculation for improved content loading
+
+### Fixed
+- Automatic cleanup of temporary screenshot and PDF file
+
+### Changed
+- Modified page load strategy from "load" to "domcontentloaded" for faster initial rendering
+- Removed explicit "networkidle" wait state
+- Improved scroll timing calculation based on page height
+- Enhanced file handling for screenshots and PDFs with automatic cleanup
+
+### Performance
+- Faster page loading with optimized wait states
+- Improved memory usage by cleaning up temporary files
+- Better handling of long pages with progressive scrolling
+
+[1.1.0]: https://github.com/watercrawl/playwright/releases/tag/v1.1.0
+
 ## [1.0.0] - 2025-01-12
 
 ### Added
