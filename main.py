@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from error import get_error
 from models import CrawlRequest, HealthResponse, ActionType, CrawlResponse, Attachment, AttachmentType
-from services import PlaywrightService
+from services import PlaywrightService, remove_sec_ch_ua
 
 service: PlaywrightService | None = None
 
@@ -24,6 +24,7 @@ PORT = int(os.environ.get("PORT", "8000"))
 # API Key configuration
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 AUTH_API_KEY = os.environ.get("AUTH_API_KEY")
+ENGINE = os.environ.get("ENGINE", "chromium")
 
 
 async def verify_api_key(api_key: str = Depends(api_key_header)):
@@ -49,7 +50,7 @@ async def startup_event():
     """Event handler for application startup to initialize the browser."""
     global service
     service = await PlaywrightService.create()
-    await service.start_browser()
+    await service.start_browser(engine=ENGINE)
 
 
 async def shutdown_event():
@@ -124,6 +125,8 @@ async def fetch_html(body: CrawlRequest):
             )
 
         page = await context.new_page()
+        if ENGINE == "chromium":
+            await page.route("**/*", remove_sec_ch_ua)
 
         response = await page.goto(
             body.url,
@@ -203,7 +206,6 @@ async def fetch_html(body: CrawlRequest):
 
         crawl_response.html = await page.content()
 
-        page.wait_for_timeout(2000)
 
     except Exception as e:
         return JSONResponse(

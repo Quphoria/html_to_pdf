@@ -22,6 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN mkdir /ms-playwright && \
     playwright install chromium --with-deps && \
+    playwright install firefox --with-deps && \
+    playwright install webkit --with-deps && \
     chown -R playwright:playwright /ms-playwright
 
 # Copy application code
