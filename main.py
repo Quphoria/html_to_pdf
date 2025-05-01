@@ -8,12 +8,17 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Depends
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.logger import logger
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from error import get_error
 from models import CrawlRequest, HealthResponse, ActionType, CrawlResponse, Attachment, AttachmentType
 from services import PlaywrightService, remove_sec_ch_ua
+from utils import parse_proxy_env
+
+load_dotenv()
 
 service: PlaywrightService | None = None
 
@@ -25,6 +30,8 @@ PORT = int(os.environ.get("PORT", "8000"))
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 AUTH_API_KEY = os.environ.get("AUTH_API_KEY")
 ENGINE = os.environ.get("ENGINE", "chromium")
+DEFAULT_PROXY = os.environ.get('DEFAULT_PROXY', None)
+print(ENGINE)
 
 
 async def verify_api_key(api_key: str = Depends(api_key_header)):
@@ -50,6 +57,7 @@ async def startup_event():
     """Event handler for application startup to initialize the browser."""
     global service
     service = await PlaywrightService.create()
+    logger.info("Starting browser with Engine: %s", ENGINE)
     await service.start_browser(engine=ENGINE)
 
 
@@ -110,9 +118,17 @@ async def fetch_html(body: CrawlRequest):
                 "username": body.proxy.username,
                 "password": body.proxy.password,
             }
+        elif DEFAULT_PROXY:
+            server, username, password = parse_proxy_env(DEFAULT_PROXY)
+            proxy = {
+                "server": server,
+                "username": username,
+                "password": password,
+            }
 
         context = await service.new_context(
             user_agent=body.user_agent or None,
+            # viewport={"width": 1280, "height": 720},
             locale=body.locale or None,
             extra_http_headers=body.extra_headers or None,
             proxy=proxy
@@ -208,6 +224,8 @@ async def fetch_html(body: CrawlRequest):
 
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JSONResponse(
             content={"error": str(e)}, status_code=500
         )
