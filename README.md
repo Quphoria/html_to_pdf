@@ -49,8 +49,8 @@ Access the interactive API documentation at `http://localhost:8000/docs`
 ### Using Docker Hub Image
 
 ```bash
-docker pull quphoria/html_to_pdf:latest
-docker run -p 8000:8000 -e AUTH_API_KEY=your-secret-key quphoria/html_to_pdf
+docker pull quphoria/html-to-pdf:latest
+docker run -p 8000:8000 -e AUTH_API_KEY=your-secret-key quphoria/html-to-pdf
 ```
 
 ## API Documentation
