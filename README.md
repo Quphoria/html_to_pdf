@@ -1,10 +1,13 @@
-# WaterCrawl Playwright Service
+# HTML to PDF Service
 
-A FastAPI-based web service that uses Playwright to fetch and process web content. This service provides a robust API for web scraping with support for proxies, media blocking, and API key authentication.
+A FastAPI-based web service that uses Playwright to fetch web content and convert it into a PDF. This service provides a robust API for PDF generation with support for proxies, media blocking, PDF generation options, and API key authentication.
+
+> This is a fork of [watercrawl/playwright](https://github.com/watercrawl/playwright)  
 
 ## Features
 
-- 🚀 Fast and async web scraping using Playwright
+- 🚀 Fast and async PDF generation using Playwright
+- 🎯 Accurate HTML rendering using a real browser
 - 🔒 Optional API key authentication
 - 🌐 Proxy support
 - 🖼️ Media blocking capabilities
@@ -18,8 +21,8 @@ A FastAPI-based web service that uses Playwright to fetch and process web conten
 
 1. Clone the repository:
 ```bash
-git clone git@github.com:watercrawl/playwright.git
-cd playwright
+git clone git@github.com:Quphoria/html_to_pdf.git
+cd html_to_pdf
 ```
 
 2. Set up environment variables:
@@ -46,8 +49,8 @@ Access the interactive API documentation at `http://localhost:8000/docs`
 ### Using Docker Hub Image
 
 ```bash
-docker pull watercrawl/playwright:latest
-docker run -p 8000:8000 -e AUTH_API_KEY=your-secret-key watercrawl/playwright
+docker pull quphoria/html_to_pdf:latest
+docker run -p 8000:8000 -e AUTH_API_KEY=your-secret-key quphoria/html_to_pdf
 ```
 
 ## API Documentation
@@ -64,8 +67,8 @@ The API documentation is available through Swagger UI at `/docs` endpoint. This 
 - GET `/health/liveness` - Liveness probe
 - GET `/health/readiness` - Readiness probe
 
-#### HTML Fetching
-- POST `/html` - Fetch HTML content from a URL
+#### PDF Generation Fetching
+- POST `/pdf` - Fetch HTML content from a URL and return a generated PDF
 
 #### Request Body
 ```json
@@ -83,6 +86,11 @@ The API documentation is available through Swagger UI at `/docs` endpoint. This 
   "locale": "en-US",
   "extra_headers": {
     "Custom-Header": "value"
+  },
+  "pdf_options": {
+    "print_background": true,
+    "width": "80mm",
+    "height": "297mm"
   }
 }
 ```
@@ -92,7 +100,7 @@ The API documentation is available through Swagger UI at `/docs` endpoint. This 
 When `AUTH_API_KEY` is set in the environment, the API requires authentication using the `X-API-Key` header:
 
 ```bash
-curl -X POST http://localhost:8000/html \
+curl -X POST http://localhost:8000/pdf \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-secret-api-key" \
   -d '{"url": "https://example.com"}'
@@ -115,7 +123,7 @@ pip install -r requirements.txt
 
 3. Install Playwright browsers:
 ```bash
-playwright install chromium
+playwright install chromium-headless-shell
 ```
 
 4. Run the application:
@@ -130,12 +138,12 @@ uvicorn main:app --reload
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| AUTH_API_KEY | API key for authentication | None (disabled) |
-| PORT | Server port | 8000 |
-| HOST | Server host | 0.0.0.0 |
-| PYTHONUNBUFFERED | Python unbuffered output | 1 |
+| Variable         | Description                | Default         |
+| ---------------- | -------------------------- | --------------- |
+| AUTH_API_KEY     | API key for authentication | None (disabled) |
+| PORT             | Server port                | 8000            |
+| HOST             | Server host                | 0.0.0.0         |
+| PYTHONUNBUFFERED | Python unbuffered output   | 1               |
 
 ## Contributing
 

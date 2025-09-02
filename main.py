@@ -2,19 +2,15 @@
 This module provides a FastAPI application that uses Playwright to fetch and return
 the HTML content of a specified URL. It supports optional proxy settings and media blocking.
 """
-import base64
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime
-from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.logger import logger
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import APIKeyHeader
-from error import get_error
-from models import CrawlRequest, HealthResponse, ActionType, CrawlResponse, Attachment, AttachmentType
+from models import CrawlRequest, HealthResponse
 from services import PlaywrightService, remove_sec_ch_ua
 from utils import parse_proxy_env
 
@@ -95,16 +91,29 @@ async def readiness_probe():
     return JSONResponse(content={"status": "Service Unavailable"}, status_code=503)
 
 
-@app.post("/html", response_model=CrawlResponse, dependencies=[Depends(verify_api_key)])
-async def fetch_html(body: CrawlRequest):
+@app.post("/pdf", responses={
+    200: {
+        "content": {"application/pdf": {
+            "example": "page.pdf"
+        }}
+    },
+    500: {
+        "content": {"application/json": {
+            "example": {
+                "error": "The error message"
+            }
+        }}
+    }
+}, response_class=Response, dependencies=[Depends(verify_api_key)])
+async def fetch_pdf(body: CrawlRequest):
     """
-    Endpoint for fetching HTML content from a URL.
+    Endpoint for fetching HTML content as a PDF from a URL.
 
     Args:
         body (CrawlRequest): The request body containing the URL and other parameters.
 
     Returns:
-        JSONResponse: JSON response containing the HTML content, status code, error, and headers.
+        The generated PDF bytes
     """
     global service
     context = None
@@ -170,58 +179,23 @@ async def fetch_html(body: CrawlRequest):
         except:
             pass
 
-        crawl_response = CrawlResponse(
-            url=body.url,
-            html="",
-            status_code=response.status if response else 500,
-            error=get_error(response.status if response else 500),
-            headers=response.headers if response else {},
-            attachments=[]
+        options = {}
+        if body.pdf_options:
+            options = body.pdf_options.model_dump(
+                exclude_none=True
+            )
+
+        if body.media_type:
+            await page.emulate_media(media=body.media_type)
+        pdf = await page.pdf(**options)
+
+        return Response(
+            pdf,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": 'attachment; filename="page.pdf"'
+            }
         )
-
-        # Create output directory if it doesn't exist
-        output_dir = Path("tmp")
-        output_dir.mkdir(exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        if body.actions:
-            for action in body.actions:
-                try:
-
-                    if action.type == ActionType.SCREENSHOT:
-                        filename = f"screenshot_{timestamp}.png"
-                        filepath = output_dir / filename
-                        await page.screenshot(path=str(filepath), full_page=True)
-                        with open(filepath, "rb") as f:
-                            content = f.read()
-                            crawl_response.attachments.append(
-                                Attachment(
-                                    type=AttachmentType.SCREENSHOT,
-                                    content=base64.b64encode(content).decode("utf-8")
-                                )
-                            )
-                        os.remove(filepath)
-
-                    elif action.type == ActionType.PDF:
-                        filename = f"page_{timestamp}.pdf"
-                        filepath = output_dir / filename
-                        await page.pdf(path=str(filepath))
-
-                        with open(filepath, "rb") as f:
-                            content = f.read()
-                            crawl_response.attachments.append(
-                                Attachment(
-                                    type=AttachmentType.PDF,
-                                    content=base64.b64encode(content).decode("utf-8")
-                                )
-                            )
-                        os.remove(filepath)
-
-                except Exception as e:
-                    continue
-
-        crawl_response.html = await page.content()
-
 
     except Exception as e:
         import traceback
@@ -232,5 +206,3 @@ async def fetch_html(body: CrawlRequest):
     finally:
         if context:
             await context.close()
-
-    return crawl_response
